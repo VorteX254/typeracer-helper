@@ -1,4 +1,4 @@
-(() => {
+function startTyping(){
   // Get the full text from the race display
   const textElement = document.querySelector('.inputPanel span');
   if (!textElement) {
@@ -42,4 +42,11 @@
   };
 
   loop();
-})();
+}
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "startTyping") {
+    startTyping();
+    sendResponse({ status: "started" });
+  }
+});
