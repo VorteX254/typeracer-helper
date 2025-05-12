@@ -5,7 +5,9 @@ function captcha_script(){
         chrome.scripting.executeScript({
             target: { tabId: tabs[0].id },
             files: ['captcha_script.js']
-        });
+        }, () => {
+        chrome.tabs.sendMessage(tabs[0].id, { action: "solveCaptcha" });
+      });
     });
 }
 

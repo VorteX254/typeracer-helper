@@ -38,7 +38,7 @@ function startTyping(){
   const loop = () => {
     const done = typeNextCharacter();
     if (done) return;
-    setTimeout(loop, 35.5 + 2 * (Math.random() - 0.5));
+    setTimeout(loop, 75.5 + 2 * (Math.random() - 0.5));
   };
 
   loop();
