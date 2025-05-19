@@ -7,5 +7,21 @@
         "default_popup": "popup.html"
     },
     "permissions": ["scripting", "activeTab"],
-    "host_permissions": ["<all_urls>"]
+    "host_permissions": ["<all_urls>"],
+    "web_accessible_resources": [
+    {
+      "resources": [
+        "lib/tesseract.worker.min.js",
+        "lib/tesseract-core.wasm"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["lib/tesseract.min.js", "captcha_script.js"],
+      "run_at": "document_idle"
+    }
+  ]
 }

@@ -1,135 +1,114 @@
-replaceColour = (i) => {
-  const percent = ((i/4) % img.width) / img.width;
+function replaceColour(i, width) {
+  const percent = ((i / 4) % width) / width;
   return {
-      r: 192 + (205 - 192) * percent,
-      g: 193 + (233 - 193) * percent,
-      b: 195 + (247 - 195) * percent
-  }
+    r: 192 + (205 - 192) * percent,
+    g: 193 + (233 - 193) * percent,
+    b: 195 + (247 - 195) * percent
+  };
 }
 
-/**
- * A string function to make bulk substitutions easier
- */
-String.prototype.replaceAll = function(a,b) { 
-  let str = this.toString();
-  while (str.indexOf(a) !== -1) str = str.replace(a, b);
-  return str;
+function processText(text) {
+  return text
+    .replaceAll('\n', ' ')
+    .replaceAll('1', 'l')
+    .replaceAll('(', 'l')
+    .replaceAll(')', 'l')
+    .replaceAll('[', 'I')
+    .replaceAll('@', 'a')
+    .replaceAll('¥', 'y')
+    .replaceAll('\\', 'i')
+    .replaceAll('|', 'I')
+    .replaceAll('.', '\u1000 ').replaceAll('\u1000', '.')
+    .replaceAll(',', '\u1000 ').replaceAll('\u1000', ',')
+    .replaceAll('  ', ' ');
 }
 
-/**
- * Post-processing of the text
- */
-processText = (text) => {
-  text = text.replaceAll('\n', ' ');
-  text = text.replaceAll('1', 'l');
-  text = text.replaceAll('(', 'l');
-  text = text.replaceAll(')', 'l');
-  text = text.replaceAll('[', 'I');
-  text = text.replaceAll('@', 'a');
-  text = text.replaceAll('¥', 'y');
-  text = text.replaceAll('\\', 'i');
-  text = text.replaceAll('|', 'I');
-
-  // Spaces after full stops and commas  
-  text = text.replaceAll('.', '\u1000 ');
-  text = text.replaceAll('\u1000', '.');
-  text = text.replaceAll(',', '\u1000 ');
-  text = text.replaceAll('\u1000', ',');
-  text = text.replaceAll('  ', ' ');
-
-  return text;
-}
-
-/**
- * Gets the DataURL of the pre-processed captcha image
- */
-getImageDataURL = () => {
-  img = document.querySelector('.challengeImg');
-
-  // Use HTML canvas to perform pre-processing of captcha image
-  canv = document.createElement('canvas');
+function getImageDataURL() {
+  const img = document.querySelector('.challengeImg');
+  const canv = document.createElement('canvas');
   img.parentElement.parentElement.parentElement.parentElement.appendChild(canv);
+
   canv.style.display = 'block';
   canv.style.marginTop = '5px';
   canv.style.backgroundColor = 'black';
   canv.width = img.width;
   canv.height = img.height;
-  ctx = canv.getContext('2d');
-  ctx.drawImage(img, 0, 0);
-  imgData = ctx.getImageData(0, 0, img.width, img.height);
 
-  // Replace black markings with background colour
-  changedPixels = [];
-  for (let i=0; i<imgData.data.length; i+=4) {
-      if (imgData.data[i] <= 50 && imgData.data[i+1] <= 50 && imgData.data[i+2] <= 50) {
-          imgData.data[i  ] = replaceColour(i).r;
-          imgData.data[i+1] = replaceColour(i).b;
-          imgData.data[i+2] = replaceColour(i).g;
-          changedPixels.push(i);
-      }
+  const ctx = canv.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  const imgData = ctx.getImageData(0, 0, img.width, img.height);
+
+  const changedPixels = [];
+  for (let i = 0; i < imgData.data.length; i += 4) {
+    if (imgData.data[i] <= 50 && imgData.data[i + 1] <= 50 && imgData.data[i + 2] <= 50) {
+      const c = replaceColour(i, img.width);
+      imgData.data[i] = c.r;
+      imgData.data[i + 1] = c.b;
+      imgData.data[i + 2] = c.g;
+      changedPixels.push(i);
+    }
   }
 
-  // Replace nearby pixels
   changedPixels.forEach(i => {
-    // pixel above
-    try { imgData.data[i   + img.width*4] = replaceColour(i).r; } catch {}
-    try { imgData.data[i+1 + img.width*4] = replaceColour(i).g; } catch {}
-    try { imgData.data[i+2 + img.width*4] = replaceColour(i).b; } catch {}
-
-    // pixel below
-    try { imgData.data[i   - img.width*4] = replaceColour(i).r; } catch {}
-    try { imgData.data[i+1 - img.width*4] = replaceColour(i).g; } catch {}
-    try { imgData.data[i+2 - img.width*4] = replaceColour(i).b; } catch {}
-
-    // pixel right
-    try { imgData.data[i   + 4] = replaceColour(i).r; } catch {}
-    try { imgData.data[i+1 + 4] = replaceColour(i).g; } catch {}
-    try { imgData.data[i+2 + 4] = replaceColour(i).b; } catch {}
-
-    // pixel left
-    try { imgData.data[i   - 4] = replaceColour(i).r; } catch {}
-    try { imgData.data[i+1 - 4] = replaceColour(i).g; } catch {}
-    try { imgData.data[i+2 - 4] = replaceColour(i).b; } catch {}
-  })
+    const c = replaceColour(i, img.width);
+    try { imgData.data[i + img.width * 4] = c.r; } catch {}
+    try { imgData.data[i + 1 + img.width * 4] = c.g; } catch {}
+    try { imgData.data[i + 2 + img.width * 4] = c.b; } catch {}
+    try { imgData.data[i - img.width * 4] = c.r; } catch {}
+    try { imgData.data[i + 1 - img.width * 4] = c.g; } catch {}
+    try { imgData.data[i + 2 - img.width * 4] = c.b; } catch {}
+    try { imgData.data[i + 4] = c.r; } catch {}
+    try { imgData.data[i + 1 + 4] = c.g; } catch {}
+    try { imgData.data[i + 2 + 4] = c.b; } catch {}
+    try { imgData.data[i - 4] = c.r; } catch {}
+    try { imgData.data[i + 1 - 4] = c.g; } catch {}
+    try { imgData.data[i + 2 - 4] = c.b; } catch {}
+  });
 
   ctx.putImageData(imgData, 0, 0);
-
-  return canv.toDataURL()
+  return canv.toDataURL();
 }
 
+async function solveCaptcha() {
+  console.log("[CAPTCHA Solver] Starting");
 
-// Begin process to beat captcha
-(async () => {
-  worker = Tesseract.createWorker({});
-  await worker.load();
-  await worker.loadLanguage('eng');
-  await worker.initialize('eng');
+  // Trigger CAPTCHA modal
+  document.querySelector('.gwt-Button')?.click();
 
-  // View the captcha
-  document.querySelector('.gwt-Button').click();
-
-  // Wait until the image has loaded
-  let listenerFunction;
-  await new Promise(res => {
-    listenerFunction = change => {
-      if (change.target.className !== 'DialogBox trPopupDialog typingChallengeDialog') return;
-      change.target.querySelector('.challengeImg').onload = () => {
-        res();
+  // Wait for the CAPTCHA image to load
+  const popupLoaded = await new Promise(resolve => {
+    const observer = new MutationObserver(mutations => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (
+            node.nodeType === 1 &&
+            node.classList.contains('DialogBox') &&
+            node.querySelector('.challengeImg')
+          ) {
+            node.querySelector('.challengeImg').onload = () => {
+              observer.disconnect();
+              resolve(true);
+            };
+          }
+        }
       }
-    };
-    document.body.addEventListener("DOMNodeInserted", listenerFunction);
-  })
-  document.body.querySelector('.popupContent').removeEventListener("DOMNodeInserted", listenerFunction);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  });
 
-  // Use tesseract to perform OCR on the image
-  let { data: { text } } = await worker.recognize(getImageDataURL());
+  // Load Tesseract locally from extension
+  const script = document.createElement("script");
+  script.src = chrome.runtime.getURL("lib/tesseract.min.js");
+  const worker = Tesseract.createWorker({
+    workerPath: chrome.runtime.getURL("lib/tesseract.worker.min.js"),
+    corePath: chrome.runtime.getURL("lib/tesseract-core.wasm"),
+  });
+}
 
-  // Post-processing of text
-  text = processText(text);
-
-  // Inject the text into the typeracer textarea
-  document.querySelector('.challengeTextArea').value = text;
-  console.log(text);
-
-  await worker.terminate();
-})();
+// Wait for popup to send the message
+chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
+  if (req.action === "solveCaptcha") {
+    solveCaptcha().then(() => sendResponse({ status: "done" }));
+    return true;
+  }
+});
