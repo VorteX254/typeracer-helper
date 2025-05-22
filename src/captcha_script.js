@@ -72,37 +72,49 @@ function getImageDataURL() {
 async function solveCaptcha() {
   console.log("[CAPTCHA Solver] Starting");
 
-  // Trigger CAPTCHA modal
-  document.querySelector('.gwt-Button')?.click();
+  worker = Tesseract.createWorker({});
+  await worker.load();
+  await worker.loadLanguage('eng');
+  await worker.initialize('eng');
 
-  // Wait for the CAPTCHA image to load
-  const popupLoaded = await new Promise(resolve => {
-    const observer = new MutationObserver(mutations => {
-      for (const mutation of mutations) {
-        for (const node of mutation.addedNodes) {
-          if (
-            node.nodeType === 1 &&
-            node.classList.contains('DialogBox') &&
-            node.querySelector('.challengeImg')
-          ) {
-            node.querySelector('.challengeImg').onload = () => {
-              observer.disconnect();
-              resolve(true);
+  // View the captcha
+  document.querySelector('.gwt-Button').click();
+
+  await new Promise(res => {
+  const observer = new MutationObserver(mutations => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) {
+        if (node.className === 'DialogBox trPopupDialog typingChallengeDialog') {
+          const img = node.querySelector('.challengeImg');
+          if (img) {
+            img.onload = () => {
+              observer.disconnect(); // stop observing
+              res();
             };
           }
         }
       }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+    }
   });
 
-  // Load Tesseract locally from extension
-  const script = document.createElement("script");
-  script.src = chrome.runtime.getURL("lib/tesseract.min.js");
-  const worker = Tesseract.createWorker({
-    workerPath: chrome.runtime.getURL("lib/tesseract.worker.min.js"),
-    corePath: chrome.runtime.getURL("lib/tesseract-core.wasm"),
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
   });
+  });
+
+
+  // Use tesseract to perform OCR on the image
+  let { data: { text } } = await worker.recognize(getImageDataURL());
+
+  // Post-processing of text
+  text = processText(text);
+
+  // Inject the text into the typeracer textarea
+  document.querySelector('.challengeTextArea').value = text;
+  console.log(text);
+
+  await worker.terminate();
 }
 
 // Wait for popup to send the message
